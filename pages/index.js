@@ -5,41 +5,52 @@ export default function Home() {
   const canvasRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [context, setContext] = useState(null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   useEffect(() => {
-    if (canvasRef.current) {
-      const canvas = canvasRef.current;
+    const canvas = canvasRef.current;
+    if (canvas) {
       const ctx = canvas.getContext("2d");
-      // Set the canvas dimensions based on the device's screen size
-      const devicePixelRatio = window.devicePixelRatio || 1;
-      const screenWidth = window.innerWidth;
-      const screenHeight = window.innerHeight;
-      canvas.width = screenWidth * devicePixelRatio;
-      canvas.height = screenHeight * devicePixelRatio;
-      canvas.style.width = `${screenWidth}px`;
-      canvas.style.height = `${screenHeight}px`;
-      ctx.scale(devicePixelRatio, devicePixelRatio); // Scaling for high DPI displays
       setContext(ctx);
+      resizeCanvas(canvas, ctx);
+      window.addEventListener("resize", () => resizeCanvas(canvas, ctx));
     }
+    return () => {
+      window.removeEventListener("resize", () => resizeCanvas(canvas, ctx));
+    };
   }, []);
+
+  const resizeCanvas = (canvas, ctx) => {
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * devicePixelRatio;
+    canvas.height = rect.height * devicePixelRatio;
+    ctx.scale(devicePixelRatio, devicePixelRatio);
+  };
 
   const startDrawing = (e) => {
     const { clientX, clientY } = getCoordinates(e);
     context.beginPath();
-    context.moveTo(clientX, clientY);
+    context.moveTo(clientX - offset.x, clientY - offset.y);
     setIsDrawing(true);
   };
 
   const draw = (e) => {
     if (!isDrawing) return;
     const { clientX, clientY } = getCoordinates(e);
-    context.lineTo(clientX, clientY);
+    context.lineTo(clientX - offset.x, clientY - offset.y);
     context.stroke();
   };
 
   const stopDrawing = () => {
     context.closePath();
     setIsDrawing(false);
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
   const downloadSignature = () => {
@@ -57,17 +68,31 @@ export default function Home() {
       clientX = e.nativeEvent.offsetX;
       clientY = e.nativeEvent.offsetY;
     } else if (e.type.startsWith("touch")) {
-      clientX = e.touches[0].clientX - canvasRef.current.offsetLeft;
-      clientY = e.touches[0].clientY - canvasRef.current.offsetTop;
+      clientX =
+        e.touches[0].clientX - canvasRef.current.getBoundingClientRect().left;
+      clientY =
+        e.touches[0].clientY - canvasRef.current.getBoundingClientRect().top;
     }
     return { clientX, clientY };
   };
 
+  const handleScroll = () => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    setOffset({ x: rect.left, y: rect.top });
+  };
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   return (
-    <div className="flex flex-col items-center justify-center h-1">
+    <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <canvas
         ref={canvasRef}
-        className="border border-black-600"
+        className="border border-gray-300"
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
@@ -75,13 +100,22 @@ export default function Home() {
         onTouchStart={startDrawing}
         onTouchMove={draw}
         onTouchEnd={stopDrawing}
+        style={{ touchAction: "none" }} // Prevent default touch actions
       />
-      <button
-        onClick={downloadSignature}
-        className=" mt-4 px-4 py-2 bg-green-500 text-white rounded"
-      >
-        Download
-      </button>
+      <div className="mt-4 space-x-4">
+        <button
+          onClick={clearSignature}
+          className="px-4 py-2 bg-red-500 text-white rounded"
+        >
+          Clear
+        </button>
+        <button
+          onClick={downloadSignature}
+          className="px-4 py-2 bg-green-500 text-white rounded"
+        >
+          Download
+        </button>
+      </div>
     </div>
   );
 }
