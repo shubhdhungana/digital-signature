@@ -10,7 +10,15 @@ export default function Home() {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext("2d");
-      ctx.scale(2, 2); // Scaling for high DPI displays (optional)
+      // Set the canvas dimensions based on the device's screen size
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const screenWidth = window.innerWidth;
+      const screenHeight = window.innerHeight;
+      canvas.width = screenWidth * devicePixelRatio;
+      canvas.height = screenHeight * devicePixelRatio;
+      canvas.style.width = `${screenWidth}px`;
+      canvas.style.height = `${screenHeight}px`;
+      ctx.scale(devicePixelRatio, devicePixelRatio); // Scaling for high DPI displays
       setContext(ctx);
     }
   }, []);
@@ -45,10 +53,10 @@ export default function Home() {
 
   const getCoordinates = (e) => {
     let clientX, clientY;
-    if (e.type === "mousedown" || e.type === "mousemove" || e.type === "mouseup" || e.type === "mouseleave") {
+    if (e.type.startsWith("mouse")) {
       clientX = e.nativeEvent.offsetX;
       clientY = e.nativeEvent.offsetY;
-    } else if (e.type === "touchstart" || e.type === "touchmove" || e.type === "touchend") {
+    } else if (e.type.startsWith("touch")) {
       clientX = e.touches[0].clientX - canvasRef.current.offsetLeft;
       clientY = e.touches[0].clientY - canvasRef.current.offsetTop;
     }
@@ -59,8 +67,6 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <canvas
         ref={canvasRef}
-        width={600}
-        height={400}
         className="border border-gray-300"
         onMouseDown={startDrawing}
         onMouseMove={draw}
