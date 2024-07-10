@@ -9,21 +9,23 @@ export default function Home() {
   useEffect(() => {
     if (canvasRef.current) {
       const canvas = canvasRef.current;
-      setContext(canvas.getContext("2d"));
+      const ctx = canvas.getContext("2d");
+      ctx.scale(2, 2); // Scaling for high DPI displays (optional)
+      setContext(ctx);
     }
   }, []);
 
   const startDrawing = (e) => {
-    const { offsetX, offsetY } = e.nativeEvent;
+    const { clientX, clientY } = getCoordinates(e);
     context.beginPath();
-    context.moveTo(offsetX, offsetY);
+    context.moveTo(clientX, clientY);
     setIsDrawing(true);
   };
 
   const draw = (e) => {
     if (!isDrawing) return;
-    const { offsetX, offsetY } = e.nativeEvent;
-    context.lineTo(offsetX, offsetY);
+    const { clientX, clientY } = getCoordinates(e);
+    context.lineTo(clientX, clientY);
     context.stroke();
   };
 
@@ -41,6 +43,18 @@ export default function Home() {
     });
   };
 
+  const getCoordinates = (e) => {
+    let clientX, clientY;
+    if (e.type === "mousedown" || e.type === "mousemove" || e.type === "mouseup" || e.type === "mouseleave") {
+      clientX = e.nativeEvent.offsetX;
+      clientY = e.nativeEvent.offsetY;
+    } else if (e.type === "touchstart" || e.type === "touchmove" || e.type === "touchend") {
+      clientX = e.touches[0].clientX - canvasRef.current.offsetLeft;
+      clientY = e.touches[0].clientY - canvasRef.current.offsetTop;
+    }
+    return { clientX, clientY };
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen py-2">
       <canvas
@@ -52,6 +66,9 @@ export default function Home() {
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
       />
       <button
         onClick={downloadSignature}
