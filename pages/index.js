@@ -64,10 +64,10 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen py-2">
+    <div className="flex flex-col items-center justify-center h-1">
       <canvas
         ref={canvasRef}
-        className="border border-gray-300"
+        className="border border-black-600"
         onMouseDown={startDrawing}
         onMouseMove={draw}
         onMouseUp={stopDrawing}
@@ -78,7 +78,7 @@ export default function Home() {
       />
       <button
         onClick={downloadSignature}
-        className="mt-4 px-4 py-2 bg-green-500 text-white rounded"
+        className=" mt-4 px-4 py-2 bg-green-500 text-white rounded"
       >
         Download
       </button>
